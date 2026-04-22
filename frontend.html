@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClaimCompass</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f1f5f9;
+      --surface: #ffffff;
+      --surface-raised: #f8fafc;
+      --border: #e2e8f0;
+      --border-light: #f1f5f9;
+      --text: #0f172a;
+      --text-secondary: #334155;
+      --text-muted: #64748b;
+      --text-faint: #94a3b8;
+      --accent: #3b82f6;
+      --accent-light: #dbeafe;
+      --present-bg: #dcfce7;
+      --present-text: #15803d;
+      --present-border: #86efac;
+      --missing-bg: #fee2e2;
+      --missing-text: #b91c1c;
+      --missing-border: #fca5a5;
+      --pending-bg: #fef3c7;
+      --pending-text: #92400e;
+      --pending-border: #fcd34d;
+      --danger: #dc2626;
+      --danger-bg: #fef2f2;
+      --danger-border: #fecaca;
+      --radius: 10px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      padding: 14px 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.15);
+      z-index: 10;
+    }
+    .header-left { display: flex; align-items: center; gap: 14px; }
+    .header-title { font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.6px; }
+    .header-divider { width: 1px; height: 20px; background: rgba(255,255,255,0.15); }
+    .header-sub { font-size: 12px; color: rgba(255,255,255,0.5); }
+    .header-right { display: flex; align-items: center; gap: 14px; font-size: 12px; color: rgba(255,255,255,0.6); }
+    .header-badge {
+      padding: 4px 14px; border-radius: 20px;
+      background: rgba(255,255,255,0.1); color: #e2e8f0;
+      font-weight: 600; border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    /* Breadcrumb */
+    .breadcrumb {
+      padding: 10px 28px; background: var(--surface);
+      border-bottom: 1px solid var(--border);
+      font-size: 12px; color: var(--text-muted);
+      display: flex; align-items: center; gap: 8px; flex-wrap: wrap;
+    }
+    .breadcrumb .sep { color: var(--border); }
+    .breadcrumb .hl { font-weight: 600; color: var(--text); }
+
+    /* Upload Hero */
+    .upload-hero {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; flex: 1; min-height: 60vh; gap: 24px; padding: 40px;
+    }
+    .upload-hero h2 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; }
+    .upload-hero p { font-size: 14px; color: var(--text-muted); max-width: 520px; text-align: center; line-height: 1.6; }
+    .upload-box {
+      padding: 48px 60px; border: 2px dashed var(--border); border-radius: 16px;
+      background: var(--surface); text-align: center; cursor: pointer;
+      transition: all 0.2s; box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .upload-box:hover { border-color: var(--accent); background: var(--accent-light); }
+    .upload-box input[type=file] { display: none; }
+
+    /* Three-panel grid — FULL WIDTH */
+    .panels {
+      display: grid;
+      grid-template-columns: minmax(280px, 1fr) minmax(400px, 1.6fr) minmax(300px, 1.2fr);
+      gap: 16px;
+      padding: 16px 20px;
+      flex: 1;
+    }
+    .panel {
+      background: var(--surface); border-radius: var(--radius);
+      padding: 20px; border: 1px solid var(--border);
+      overflow-y: auto; max-height: calc(100vh - 140px);
+      box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+    }
+    .panel::-webkit-scrollbar { width: 5px; }
+    .panel::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+    .center-col {
+      display: flex; flex-direction: column; gap: 16px;
+      overflow-y: auto; max-height: calc(100vh - 140px);
+    }
+    .center-col::-webkit-scrollbar { width: 5px; }
+    .center-col::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+
+    /* Section headers */
+    .sh {
+      font-size: 14px; font-weight: 700; padding-bottom: 10px;
+      border-bottom: 2px solid var(--border); margin-bottom: 14px;
+      display: flex; align-items: center; gap: 8px;
+    }
+
+    /* Field rows */
+    .fg { padding: 8px 0; border-bottom: 1px solid var(--border-light); }
+    .fg:last-child { border-bottom: none; }
+    .fg-label { font-size: 10px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+    .fr { display: flex; justify-content: space-between; align-items: baseline; padding: 3px 0; gap: 8px; }
+    .fl { font-size: 12px; color: var(--text-muted); flex-shrink: 0; }
+    .fv { font-size: 12px; color: var(--text-secondary); text-align: right; word-break: break-word; max-width: 60%; font-weight: 500; }
+    .fv.mono { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--accent); }
+    .fv.danger { color: var(--danger); font-weight: 700; }
+
+    /* Stats */
+    .stat-row { display: flex; gap: 10px; margin-bottom: 14px; }
+    .stat-chip { display: flex; align-items: center; gap: 6px; padding: 6px 14px; border-radius: 8px; flex: 1; justify-content: center; }
+    .stat-chip .num { font-size: 20px; font-weight: 800; }
+    .stat-chip .lbl { font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    /* Checklist items */
+    .ci { padding: 8px 10px; border-radius: 8px; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
+    .ci:hover { background: var(--surface-raised); border-color: var(--border); }
+    .ci-head { display: flex; align-items: center; gap: 8px; }
+    .ci-detail {
+      font-size: 11px; color: var(--text-muted); margin-top: 8px; margin-left: 18px;
+      line-height: 1.6; padding: 8px 10px; background: var(--surface-raised);
+      border-radius: 6px; border: 1px solid var(--border-light); display: none;
+    }
+    .pd { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .pd-critical { background: #ef4444; box-shadow: 0 0 0 2px #fee2e2; }
+    .pd-important { background: #f59e0b; box-shadow: 0 0 0 2px #fef3c7; }
+    .pd-supporting { background: #94a3b8; box-shadow: 0 0 0 2px #f1f5f9; }
+    .sb {
+      display: inline-block; padding: 3px 10px; border-radius: 20px;
+      font-size: 10px; font-weight: 700; letter-spacing: 0.4px; text-transform: uppercase;
+    }
+    .sb-present { background: var(--present-bg); color: var(--present-text); border: 1px solid var(--present-border); }
+    .sb-missing { background: var(--missing-bg); color: var(--missing-text); border: 1px solid var(--missing-border); }
+    .sb-not_yet_due { background: var(--pending-bg); color: var(--pending-text); border: 1px solid var(--pending-border); }
+    .sb-not_applicable { background: #f3f4f6; color: #9ca3af; border: 1px solid #e5e7eb; }
+
+    /* Upload zone */
+    .uz { margin-top: 12px; padding: 16px; border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface-raised); }
+    .uz-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 10px; }
+    .uz select, .uz input[type=text] {
+      width: 100%; padding: 9px 12px; border-radius: 8px; border: 1px solid var(--border);
+      font-size: 12px; margin-bottom: 8px; outline: none; font-family: inherit;
+      background: var(--surface); transition: border-color 0.15s;
+    }
+    .uz select:focus, .uz input[type=text]:focus { border-color: var(--accent); }
+    .uz input[type=file] { font-size: 12px; margin-bottom: 8px; }
+    .uz .dv { font-size: 10px; color: var(--text-faint); text-align: center; margin: 6px 0; text-transform: uppercase; letter-spacing: 1px; }
+    .uz button {
+      width: 100%; padding: 10px 0; border-radius: 8px; border: none; cursor: pointer;
+      font-size: 12px; font-weight: 700; color: #fff; background: var(--text);
+      transition: all 0.2s; letter-spacing: 0.3px;
+    }
+    .uz button:disabled { background: #cbd5e1; cursor: default; }
+    .uz button:not(:disabled):hover { background: var(--accent); }
+
+    /* State card */
+    .sc {
+      padding: 24px; border-radius: 12px; text-align: center;
+      position: relative; overflow: hidden;
+    }
+    .sc::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 3px; background: currentColor; opacity: 0.3; }
+    .sc-icon { font-size: 40px; margin-bottom: 4px; }
+    .sc-label { font-size: 22px; font-weight: 800; letter-spacing: -0.3px; }
+    .sc-day { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+    .sbar { display: flex; gap: 3px; margin: 14px 0; }
+    .sbar-seg { flex: 1; height: 5px; border-radius: 3px; transition: background 0.3s; }
+    .rb { padding: 12px; border-radius: 8px; background: var(--surface-raised); border: 1px solid var(--border-light); margin-bottom: 14px; }
+    .rb-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 4px; }
+    .rb-reason { font-size: 11px; color: var(--text-secondary); line-height: 1.5; }
+    .rb-cond { font-size: 11px; margin-top: 2px; }
+    .sig-box {
+      font-size: 11px; color: var(--missing-text); padding: 8px 12px;
+      border-radius: 8px; background: var(--danger-bg);
+      border: 1px solid var(--danger-border); line-height: 1.5; margin-bottom: 6px;
+    }
+    .sig-hdr { font-size: 12px; font-weight: 700; color: var(--danger); margin-bottom: 8px; }
+    .act-item { display: flex; gap: 10px; align-items: baseline; font-size: 12px; color: var(--text-secondary); line-height: 1.6; margin-bottom: 4px; }
+    .act-num { color: var(--text-faint); font-size: 11px; flex-shrink: 0; font-weight: 600; font-family: 'JetBrains Mono', monospace; }
+    .act-hdr { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+
+    /* Evidence chain */
+    .ch-line { position: absolute; left: 15px; top: 20px; bottom: 20px; width: 2px; background: linear-gradient(to bottom, var(--border), transparent); }
+    .ch-entry { display: flex; gap: 14px; position: relative; z-index: 1; padding: 8px 0; }
+    .ch-dot {
+      width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 14px;
+    }
+    .ch-dot-state { background: var(--text); color: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.15); }
+    .ch-dot-doc { background: var(--surface-raised); border: 2px solid var(--border); color: var(--text-muted); }
+    .ch-name { font-size: 12px; font-weight: 600; }
+    .ch-time { font-size: 10px; color: var(--text-faint); font-family: 'JetBrains Mono', monospace; }
+    .ch-type { font-size: 11px; color: var(--text-muted); }
+    .ch-change { font-size: 11px; color: var(--text-secondary); margin-top: 3px; }
+    .ch-sbadge { font-size: 11px; font-weight: 700; margin-top: 6px; padding: 6px 10px; border-radius: 8px; display: inline-block; }
+
+    /* Footer */
+    .footer {
+      padding: 10px 28px; border-top: 1px solid var(--border);
+      display: flex; justify-content: space-between;
+      font-size: 10px; color: var(--text-faint);
+      background: var(--surface); letter-spacing: 0.2px;
+    }
+
+    @media (max-width: 1100px) {
+      .panels { grid-template-columns: 1fr; }
+      .panel, .center-col { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="header-left">
+      <span class="header-title">ClaimCompass</span>
+      <span class="header-divider"></span>
+      <span class="header-sub">Where is this claim, and what should happen next?</span>
+    </div>
+    <div class="header-right">
+      <span id="hdr-name"></span>
+      <span class="header-badge" id="hdr-day"></span>
+    </div>
+  </div>
+  <div class="breadcrumb" id="bc" style="display:none"></div>
+  <div id="app" style="flex:1;display:flex;flex-direction:column"></div>
+  <div class="footer">
+    <span>ClaimCompass · Rules-based state classification · No fake statistics · No litigation predictions</span>
+    <span>pypdf + Gemini 2.5 Flash fallback · FastAPI · Azure</span>
+  </div>
+
+<script>
+/* ================================================================
+   STATE
+   ================================================================ */
+var data = null;
+
+var SM = {
+  INTAKE:          { icon: "📥", color: "#3b82f6", bg: "#eff6ff",  label: "Intake" },
+  INVESTIGATION:   { icon: "🔍", color: "#8b5cf6", bg: "#f5f3ff",  label: "Investigation" },
+  RESERVE_SETTING: { icon: "💰", color: "#f59e0b", bg: "#fffbeb",  label: "Reserve Setting" },
+  NEGOTIATION:     { icon: "🤝", color: "#f97316", bg: "#fff7ed",  label: "Negotiation" },
+  LITIGATION_TRACK:{ icon: "⚖️", color: "#ef4444", bg: "#fef2f2",  label: "Litigation Track" },
+  RESOLUTION:      { icon: "✅", color: "#22c55e", bg: "#f0fdf4",  label: "Resolution" }
+};
+
+var STATES = ["INTAKE","INVESTIGATION","RESERVE_SETTING","NEGOTIATION","LITIGATION_TRACK","RESOLUTION"];
+
+var DTYPES = [
+  { v: "police_report",        l: "Police Report" },
+  { v: "medical_authorization", l: "Medical Authorization (HIPAA)" },
+  { v: "witness_statement",    l: "Witness Statement" },
+  { v: "medical_records",      l: "Medical Records" },
+  { v: "medical_bills",        l: "Medical Bills" },
+  { v: "attorney_letter",      l: "Attorney Letter" },
+  { v: "claimant_statement",   l: "Claimant Statement" },
+  { v: "insured_statement",    l: "Insured Statement" },
+  { v: "photos",               l: "Photos" },
+  { v: "incident_report",      l: "Internal Incident Report" },
+  { v: "maintenance_records",  l: "Maintenance Records" },
+  { v: "surveillance_footage", l: "Surveillance Footage" },
+  { v: "lease_agreement",      l: "Lease Agreement" },
+  { v: "settlement_demand",    l: "Settlement Demand" },
+  { v: "release_agreement",    l: "Release / Settlement Agreement" }
+];
+
+/* ================================================================
+   API
+   ================================================================ */
+function uploadAcord(file) {
+  var fd = new FormData();
+  fd.append("file", file);
+  fetch("/api/parse-acord", { method: "POST", body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(j) { data = j; render(); });
+}
+
+function uploadDoc(docType, docName) {
+  var fd = new FormData();
+  fd.append("doc_type", docType);
+  fd.append("doc_name", docName || docType);
+  fetch("/api/upload-document", { method: "POST", body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(j) { data = j; render(); });
+}
+
+function uploadDocFile(file) {
+  var fd = new FormData();
+  fd.append("file", file);
+  fd.append("doc_name", file.name);
+  fetch("/api/upload-document", { method: "POST", body: fd })
+    .then(function(r) { return r.json(); })
+    .then(function(j) { data = j; render(); })
+    .catch(function(e) { console.error(e); });
+}
+
+/* ================================================================
+   HELPERS
+   ================================================================ */
+function esc(s) { return s == null || s === "" ? "—" : String(s); }
+function cap(s) { return s ? s.charAt(0).toUpperCase() + s.slice(1) : "—"; }
+function slabel(s) {
+  var map = { present: "Present", missing: "Missing", not_yet_due: "Pending", not_applicable: "N/A" };
+  return map[s] || s;
+}
+function frow(label, val, cls) {
+  var v = esc(val);
+  var extra = cls ? " " + cls : "";
+  return '<div class="fr"><span class="fl">' + label + '</span><span class="fv' + extra + '">' + v + '</span></div>';
+}
+
+/* ================================================================
+   RENDER
+   ================================================================ */
+function render() {
+  var app = document.getElementById("app");
+  var bc = document.getElementById("bc");
+
+  if (!data || data.error) {
+    bc.style.display = "none";
+    document.getElementById("hdr-name").textContent = "";
+    document.getElementById("hdr-day").textContent = "";
+    app.innerHTML = renderHero();
+    bindHero();
+    return;
+  }
+
+  var r = data.record;
+  var s = data.state;
+  var m = SM[s.state] || SM.INTAKE;
+
+  document.getElementById("hdr-name").textContent = r.insured_name || "";
+  document.getElementById("hdr-day").textContent = "Day " + (s.elapsedDays || 0);
+
+  bc.style.display = "flex";
+  bc.innerHTML =
+    '<span style="font-family:JetBrains Mono,monospace;font-size:11px;color:var(--accent)">' + esc(r.claim_fingerprint) + '</span>' +
+    '<span class="sep">·</span>' +
+    '<span class="hl">' + esc(r.insured_name) + '</span>' +
+    '<span class="sep">·</span>' +
+    '<span>' + esc(r.liability_type) + ' / ' + esc(r.premises_role !== "unknown" ? r.premises_role : r.products_role) + '</span>' +
+    '<span class="sep">·</span>' +
+    '<span style="color:' + m.color + ';font-weight:700">' + m.icon + ' ' + m.label + '</span>';
+
+  var trustHtml = '';
+  if (data.trustAnchors) {
+    trustHtml = '<div class="panel">' + renderTrustAnchors(data.trustAnchors) + '</div>';
+  }
+
+  app.innerHTML =
+    '<div class="panels">' +
+      '<div class="panel">' + renderSummary(r) + '</div>' +
+      '<div class="center-col">' +
+        '<div class="panel">' + renderChecklist(data.checklist) + '</div>' +
+        '<div class="panel">' + renderChain(data.evidenceChain) + '</div>' +
+      '</div>' +
+      '<div style="display:flex;flex-direction:column;gap:16px;overflow-y:auto;max-height:calc(100vh - 140px);">' +
+        '<div class="panel">' + renderState(s) + '</div>' +
+        trustHtml +
+      '</div>' +
+    '</div>';
+
+  bindChecklist();
+  bindUpload();
+}
+
+/* ---- Hero ---- */
+function renderHero() {
+  return '<div class="upload-hero">' +
+    '<h2>ClaimCompass</h2>' +
+    '<p>Upload an ACORD Form 3 (Liability Notice of Occurrence) to begin.<br>' +
+    'The system extracts the claim record, builds an evidence checklist, and classifies claim state — all with transparent, rules-based logic.</p>' +
+    '<div class="upload-box" id="drop-zone">' +
+      '<div style="font-size:56px;margin-bottom:16px">📄</div>' +
+      '<div style="font-size:15px;font-weight:700">Drop ACORD Form 3 PDF here</div>' +
+      '<div style="font-size:12px;color:var(--text-muted);margin-top:8px">or click to browse</div>' +
+      '<input type="file" id="acord-file" accept=".pdf">' +
+    '</div>' +
+    '<div style="font-size:11px;color:var(--text-faint);margin-top:8px">Accepts fillable ACORD 3 (2019/09) PDFs · pypdf extraction with 0 LLM calls</div>' +
+  '</div>';
+}
+
+function bindHero() {
+  var box = document.getElementById("drop-zone");
+  var inp = document.getElementById("acord-file");
+  if (!box || !inp) return;
+  box.addEventListener("click", function() { inp.click(); });
+  inp.addEventListener("change", function(e) { if (e.target.files[0]) uploadAcord(e.target.files[0]); });
+  box.addEventListener("dragover", function(e) { e.preventDefault(); box.style.borderColor = "var(--accent)"; });
+  box.addEventListener("dragleave", function() { box.style.borderColor = ""; });
+  box.addEventListener("drop", function(e) { e.preventDefault(); box.style.borderColor = ""; if (e.dataTransfer.files[0]) uploadAcord(e.dataTransfer.files[0]); });
+}
+
+/* ---- Claim Summary ---- */
+function renderSummary(r) {
+  var gap = (r.form_completion_date && r.date_of_loss)
+    ? Math.floor((new Date(r.form_completion_date) - new Date(r.date_of_loss)) / 86400000)
+    : null;
+  var html = '<div class="sh">📋 Claim Summary</div>';
+
+  html += '<div class="fg"><div class="fg-label">Identity</div>' +
+    frow("Fingerprint", r.claim_fingerprint, "mono") +
+    frow("Extraction", r.extraction_path === "pypdf_fillable" ? "pypdf (0 LLM calls)" : "Gemini Vision") +
+    frow("Fields", r.populated_fields + " / 26") + '</div>';
+
+  html += '<div class="fg"><div class="fg-label">Liability</div>' +
+    frow("Type", cap(r.liability_type)) +
+    frow("Role", cap(r.premises_role !== "unknown" ? r.premises_role : r.products_role)) +
+    frow("Description", r.premises_type || r.product_description) + '</div>';
+
+  html += '<div class="fg"><div class="fg-label">Parties</div>' +
+    frow("Insured", r.insured_name) +
+    frow("Prop. Owner", r.property_owner_name) +
+    frow("Manufacturer", r.product_manufacturer_name) +
+    frow("Claimant", r.injured_party ? r.injured_party.full_name : null) +
+    frow("Age / Occ.", r.injured_party ? (esc(r.injured_party.age) + " / " + esc(r.injured_party.occupation)) : null) + '</div>';
+
+  html += '<div class="fg"><div class="fg-label">Occurrence</div>' +
+    frow("Date of Loss", r.date_of_loss) +
+    frow("Report Date", r.form_completion_date) +
+    (gap !== null ? frow("Report Gap", gap + " days", gap > 14 ? "danger" : "") : "") +
+    frow("Location", [r.loss_location_city, r.loss_location_state].filter(Boolean).join(", ")) +
+    frow("Witnesses", r.witness_count) + '</div>';
+
+  html += '<div class="fg"><div class="fg-label">Policy</div>' +
+    frow("Policy #", r.policy_number, "mono") +
+    frow("Carrier", r.carrier_name) +
+    frow("NAIC", r.carrier_naic_code) +
+    frow("Loc. Code", r.insured_location_code, "mono") + '</div>';
+
+  html += '<div class="fg"><div class="fg-label">Injury</div>' +
+    frow("Description", r.injured_party ? r.injured_party.injury_description : null) +
+    frow("Treatment", r.injured_party ? r.injured_party.treatment_location : null) + '</div>';
+
+  if (r.property_damage && (r.property_damage.description || r.property_damage.estimated_amount)) {
+    html += '<div class="fg"><div class="fg-label">Property Damage</div>' +
+      frow("Description", r.property_damage.description) +
+      frow("Estimate", r.property_damage.estimated_amount) + '</div>';
+  }
+
+  html += '<div class="fg"><div class="fg-label">Authority</div>' +
+    frow("Department", r.authority_name) +
+    frow("Report #", r.report_number, "mono") + '</div>';
+
+  return html;
+}
+
+/* ---- Checklist ---- */
+function renderChecklist(cl) {
+  var p = 0, m = 0, n = 0;
+  for (var i = 0; i < cl.length; i++) {
+    if (cl[i].status === "present") p++;
+    else if (cl[i].status === "missing") m++;
+    else if (cl[i].status === "not_yet_due") n++;
+  }
+
+  var html = '<div class="sh">✅ Evidence Checklist</div>';
+
+  html += '<div class="stat-row">' +
+    '<div class="stat-chip" style="background:var(--present-bg)"><span class="num" style="color:var(--present-text)">' + p + '</span><span class="lbl" style="color:var(--present-text)">Present</span></div>' +
+    '<div class="stat-chip" style="background:var(--missing-bg)"><span class="num" style="color:var(--missing-text)">' + m + '</span><span class="lbl" style="color:var(--missing-text)">Missing</span></div>' +
+    '<div class="stat-chip" style="background:var(--pending-bg)"><span class="num" style="color:var(--pending-text)">' + n + '</span><span class="lbl" style="color:var(--pending-text)">Pending</span></div>' +
+  '</div>';
+
+  html += '<div>';
+  for (var i = 0; i < cl.length; i++) {
+    var it = cl[i];
+    html += '<div class="ci" data-idx="' + i + '">' +
+      '<div class="ci-head">' +
+        '<span class="pd pd-' + it.priority + '"></span>' +
+        '<span style="flex:1;font-size:13px;font-weight:500">' + it.label + '</span>' +
+        '<span class="sb sb-' + it.status + '">' + slabel(it.status) + '</span>' +
+      '</div>' +
+      '<div class="ci-detail">' + esc(it.reason) + '<br><span style="color:var(--text-faint);font-size:10px">Priority: ' + it.priority + ' · Expected by day ' + it.expectedByDay + '</span></div>' +
+    '</div>';
+  }
+  html += '</div>';
+
+  // Upload zone
+  html += '<div class="uz"><div class="uz-title">Upload Follow-up Document</div>' +
+    '<input type="file" id="doc-file">' +
+    '<div class="dv">or simulate</div>' +
+    '<select id="doc-sel"><option value="">Select document type...</option>';
+  for (var i = 0; i < DTYPES.length; i++) {
+    html += '<option value="' + DTYPES[i].v + '">' + DTYPES[i].l + '</option>';
+  }
+  html += '</select>' +
+    '<input type="text" id="doc-nm" placeholder="Document name (optional)">' +
+    '<button id="doc-btn" disabled>Upload Document</button></div>';
+
+  return html;
+}
+
+function bindChecklist() {
+  var items = document.querySelectorAll(".ci");
+  for (var i = 0; i < items.length; i++) {
+    items[i].addEventListener("click", function() {
+      var d = this.querySelector(".ci-detail");
+      if (d) d.style.display = d.style.display === "none" ? "block" : "none";
+    });
+  }
+}
+
+function bindUpload() {
+  var sel = document.getElementById("doc-sel");
+  var btn = document.getElementById("doc-btn");
+  var nm = document.getElementById("doc-nm");
+  var fi = document.getElementById("doc-file");
+
+  if (sel && btn) {
+    sel.addEventListener("change", function() { btn.disabled = !sel.value; });
+    btn.addEventListener("click", function() { if (sel.value) uploadDoc(sel.value, nm.value || ""); });
+  }
+  if (fi) {
+    fi.addEventListener("change", function(e) { if (e.target.files[0]) uploadDocFile(e.target.files[0]); });
+  }
+}
+
+/* ---- State ---- */
+function renderState(s) {
+  var m = SM[s.state] || SM.INTAKE;
+  var curIdx = STATES.indexOf(s.state);
+
+  var html = '<div class="sh">🎯 Claim State</div>';
+
+  html += '<div class="sc" style="background:' + m.bg + ';border:2px solid ' + m.color + '18;color:' + m.color + '">' +
+    '<div class="sc-icon">' + m.icon + '</div>' +
+    '<div class="sc-label" style="color:' + m.color + '">' + m.label + '</div>' +
+    '<div class="sc-day">Day ' + (s.elapsedDays || 0) + ' of claim lifecycle</div></div>';
+
+  html += '<div class="sbar">';
+  for (var i = 0; i < STATES.length; i++) {
+    var sm = SM[STATES[i]];
+    var bg = (i === curIdx) ? sm.color : (i < curIdx) ? sm.color + "55" : "#e2e8f0";
+    html += '<div class="sbar-seg" style="background:' + bg + '" title="' + sm.label + '"></div>';
+  }
+  html += '</div>';
+
+  html += '<div class="rb"><div class="rb-label">Rule: ' + s.rule + '</div>' +
+    '<div class="rb-reason">' + s.reason + '</div>';
+  if (s.conditions) {
+    for (var i = 0; i < s.conditions.length; i++) {
+      var c = s.conditions[i];
+      html += '<div class="rb-cond" style="color:' + (c.satisfied ? "var(--present-text)" : "var(--missing-text)") + '">' +
+        (c.satisfied ? "✓" : "✗") + ' ' + c.condition + '</div>';
+    }
+  }
+  html += '</div>';
+
+  if (s.trajectorySignals && s.trajectorySignals.length > 0) {
+    html += '<div style="margin-bottom:14px"><div class="sig-hdr">⚠ Trajectory Signals (' + s.trajectorySignals.length + ')</div>';
+    for (var i = 0; i < s.trajectorySignals.length; i++) {
+      html += '<div class="sig-box">' + s.trajectorySignals[i] + '</div>';
+    }
+    html += '</div>';
+  }
+
+  html += '<div><div class="act-hdr">Typical Next Actions</div>';
+  var actions = s.nextActions || [];
+  for (var i = 0; i < actions.length; i++) {
+    html += '<div class="act-item"><span class="act-num">' + (i + 1) + '.</span><span>' + actions[i] + '</span></div>';
+  }
+  html += '</div>';
+
+  return html;
+}
+
+/* ---- Evidence Chain ---- */
+function renderChain(chain) {
+  if (!chain || chain.length === 0) return '';
+
+  var html = '<div class="sh">🔗 Evidence Chain</div>' +
+    '<div style="font-size:11px;color:var(--text-muted);margin-bottom:10px">Every checklist change and state transition has a receipt.</div>' +
+    '<div style="position:relative"><div class="ch-line"></div>';
+
+  for (var i = 0; i < chain.length; i++) {
+    var e = chain[i];
+    var hasSC = !!e.stateChange;
+    var sm = hasSC ? (SM[e.stateChange.newState] || {}) : {};
+
+    html += '<div class="ch-entry">' +
+      '<div class="ch-dot ' + (hasSC ? "ch-dot-state" : "ch-dot-doc") + '">' + (hasSC ? (sm.icon || "→") : "📄") + '</div>' +
+      '<div style="flex:1">' +
+        '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
+          '<span class="ch-name">' + e.document + '</span>' +
+          '<span class="ch-time">' + e.timestamp + '</span>' +
+        '</div>' +
+        '<div class="ch-type">' + e.docType + ' (' + e.confidence + ')</div>';
+
+    if (e.checklistChanges) {
+      for (var j = 0; j < e.checklistChanges.length; j++) {
+        var c = e.checklistChanges[j];
+        html += '<div class="ch-change">' + c.label + ': <span style="color:var(--missing-text)">' + c.oldStatus + '</span> → <span style="color:var(--present-text)">' + c.newStatus + '</span></div>';
+      }
+    }
+
+    if (hasSC) {
+      html += '<div class="ch-sbadge" style="background:' + (sm.bg || "#f1f5f9") + ';color:' + (sm.color || "#475569") + '">' +
+        'State: ' + e.stateChange.oldState + ' → ' + e.stateChange.newState +
+        '<div style="font-size:10px;font-weight:400;margin-top:2px">' + (e.stateChange.reason || "") + '</div></div>';
+    }
+
+    html += '</div></div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+/* ---- Trust Anchors ---- */
+function renderTrustAnchors(ta) {
+  var html = '<div class="sh">🔒 Trust Anchors</div>';
+
+  // NAIC Validation
+  if (ta.naicValidation) {
+    var n = ta.naicValidation;
+    var badge = n.validated
+      ? '<span style="color:var(--present-text);font-weight:700">✓ Validated</span>'
+      : '<span style="color:var(--missing-text);font-weight:700">✗ Not Found</span>';
+
+    html += '<div style="padding:12px;border-radius:8px;background:var(--surface-raised);border:1px solid var(--border-light);margin-bottom:12px;">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">NAIC Code Validation</div>';
+    html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">';
+    html += '<span style="font-size:13px;font-weight:600">NAIC ' + esc(n.naicCode) + '</span>' + badge;
+    html += '</div>';
+    if (n.validated && n.companyName) {
+      html += '<div style="font-size:12px;color:var(--text-secondary)">' + esc(n.companyName) + '</div>';
+      html += '<div style="font-size:11px;color:var(--text-muted)">Domicile: ' + esc(n.domicileState) + ' · ' + esc(n.companyType) + ' · ' + esc(n.status) + '</div>';
+    }
+    html += '<div style="font-size:10px;color:var(--text-faint);margin-top:6px">' + esc(n.source) + '</div>';
+    html += '</div>';
+  }
+
+  // TX DOI Complaint Data
+  if (ta.txDOI) {
+    var t = ta.txDOI;
+    html += '<div style="padding:12px;border-radius:8px;background:var(--surface-raised);border:1px solid var(--border-light);">';
+    html += '<div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px">TX DOI Complaint Data</div>';
+
+    if (t.found && t.records && t.records.length > 0) {
+      if (t.matchedName) {
+        html += '<div style="font-size:12px;font-weight:600;margin-bottom:6px">' + esc(t.matchedName) + '</div>';
+      }
+      // Group by most recent year
+      var latestYear = t.records[0].year;
+      var latestRecords = t.records.filter(function(r) { return r.year === latestYear; });
+
+      html += '<div style="font-size:11px;color:var(--text-muted);margin-bottom:6px">Data for ' + latestYear + ':</div>';
+      html += '<table style="width:100%;font-size:11px;border-collapse:collapse">';
+      html += '<tr style="border-bottom:1px solid var(--border)"><th style="text-align:left;padding:4px 6px;color:var(--text-muted);font-weight:600">Line</th><th style="text-align:right;padding:4px 6px;color:var(--text-muted);font-weight:600">Complaints</th><th style="text-align:right;padding:4px 6px;color:var(--text-muted);font-weight:600">Policies</th><th style="text-align:right;padding:4px 6px;color:var(--text-muted);font-weight:600">Index</th></tr>';
+      for (var i = 0; i < latestRecords.length; i++) {
+        var rec = latestRecords[i];
+        var indexColor = rec.complaintIndex > 1.0 ? "var(--missing-text)" : rec.complaintIndex > 0 ? "var(--present-text)" : "var(--text-muted)";
+        html += '<tr style="border-bottom:1px solid var(--border-light)">';
+        html += '<td style="padding:4px 6px;color:var(--text-secondary)">' + esc(rec.lineCoverage) + '</td>';
+        html += '<td style="text-align:right;padding:4px 6px;color:var(--text-secondary)">' + rec.totalComplaints + '</td>';
+        html += '<td style="text-align:right;padding:4px 6px;color:var(--text-secondary)">' + rec.totalPolicies.toLocaleString() + '</td>';
+        html += '<td style="text-align:right;padding:4px 6px;color:' + indexColor + ';font-weight:600">' + rec.complaintIndex.toFixed(2) + '</td>';
+        html += '</tr>';
+      }
+      html += '</table>';
+      html += '<div style="font-size:10px;color:var(--text-faint);margin-top:6px">Index: 1.00 = average. Below 1 = fewer complaints than average.</div>';
+    } else {
+      html += '<div style="font-size:12px;color:var(--text-muted)">No TX DOI complaint data found for this carrier.</div>';
+      html += '<div style="font-size:11px;color:var(--text-faint);margin-top:4px">This may be because the carrier does not write business in Texas or is not in the complaint index dataset.</div>';
+    }
+    html += '<div style="font-size:10px;color:var(--text-faint);margin-top:6px">' + esc(t.source) + '</div>';
+    html += '</div>';
+  }
+
+  return html;
+}
+
+/* ================================================================
+   INIT
+   ================================================================ */
+render();
+</script>
+</body>
+</html>
